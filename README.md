@@ -10,11 +10,11 @@ have in Crystal's stdlib at some point.
 
 ## Primitives
 
-- `Sync::Safe` (annotation): mark your types as (a)sync safe.
+- `Sync::Safe` (annotation) to mark types as (a)sync safe
+- `Sync::Mutex` to protect critical sections using mutual exclusion
 
 ### TODO
 
-- `Sync::Mutex`
 - `Sync::RWLock`
 - `Sync::ConditionVariable`
 - `Sync::Exclusive(T)`
