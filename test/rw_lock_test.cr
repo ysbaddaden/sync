@@ -1,6 +1,5 @@
 require "./test_helper"
 require "../src/rw_lock"
-require "wait_group"
 
 describe Sync::RWLock do
   it "lock write waits for all read locks to be unlocked" do

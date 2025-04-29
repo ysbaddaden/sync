@@ -1,6 +1,5 @@
 require "./test_helper"
 require "../src/mutex"
-require "wait_group"
 
 describe Sync::Mutex do
   {% for type in %i[checked unchecked reentrant] %}

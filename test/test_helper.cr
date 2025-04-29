@@ -1,4 +1,5 @@
 require "minitest/autorun"
+require "wait_group"
 
 class Minitest::Test
   protected def eventually(timeout : Time::Span = 5.seconds, &)

@@ -1,6 +1,5 @@
 require "./test_helper"
 require "../src/exclusive"
-require "wait_group"
 
 describe Sync::Exclusive do
   it "#get(&)" do
