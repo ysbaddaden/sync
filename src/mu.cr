@@ -1,5 +1,5 @@
-require "crystal/pointer_linked_list"
 require "crystal/spin_lock"
+require "./core_ext/pointer_linked_list"
 require "./safe"
 
 module Sync
