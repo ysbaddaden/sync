@@ -17,6 +17,8 @@ module Sync
   # guarantee that nothing else is accessing said resources.
   #
   # The implementation doesn't favor readers or writers in particular.
+  #
+  # NOTE: Consider `Exclusive(T)` to protect a value `T` with a `RWLock`.
   @[Sync::Safe]
   class RWLock
     enum Type
