@@ -14,17 +14,20 @@ optimized and efficient.
 ## Primitives
 
 - `Sync::Safe` (annotation) to mark types as (a)sync safe
+
 - `Sync::Mutex` to protect critical sections using mutual exclusion
+- `Sync::Exclusive(T)` to protect a value `T` using mutual exclusion
+
 - `Sync::RWLock` to protect critical sections using shared access and mutual
   exclusion
-- `Sync::Exclusive(T)` to protect a value `T` using mutual exclusion
 - `Sync::Shared(T)` to protect a value `T` using a mix of shared access and
   mutual exclusion
+
+- `Sync::Future(T)` to delegate a computation to another fiber
 
 ### TODO
 
 - `Sync::ConditionVariable`
-- `Sync::Future(T)`
 - `Sync::Once`
 
 ## License
