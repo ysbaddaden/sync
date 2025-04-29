@@ -13,11 +13,11 @@ have in Crystal's stdlib at some point.
 - `Sync::Safe` (annotation) to mark types as (a)sync safe
 - `Sync::Mutex` to protect critical sections using mutual exclusion
 - `Sync::RWLock` to protect critical sections using shared access & mutual exclusion
+- `Sync::Exclusive(T)` to protect a value `T` using mutual exclusion
 
 ### TODO
 
 - `Sync::ConditionVariable`
-- `Sync::Exclusive(T)`
 - `Sync::Shared(T)`
 - `Sync::Future(T)`
 - `Sync::Once`
