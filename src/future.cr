@@ -129,9 +129,9 @@ module Sync
       in Exception
         raise reason
       in String
-        raise Failed.new(reason)
+        raise Error::Failed.new(reason)
       in Nil
-        raise Failed.new
+        raise Error::Failed.new
       end
     end
   end

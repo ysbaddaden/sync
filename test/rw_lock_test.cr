@@ -69,7 +69,7 @@ describe Sync::RWLock do
     # writers are mutually exclusive: they can safely mutate the array
 
     5.times do
-      wg.spawn(name: "writer: increment") do
+      wg.spawn(name: "writer:increment") do
         100.times do
           lock.write { 100.times { ary << ary.size } }
           Fiber.yield
@@ -78,7 +78,7 @@ describe Sync::RWLock do
     end
 
     4.times do
-      wg.spawn(name: "writer: decrement") do
+      wg.spawn(name: "writer:decrement") do
         100.times do
           lock.write { 100.times { ary.pop? } }
           Fiber.yield
@@ -130,19 +130,19 @@ describe Sync::RWLock do
     it "raises on re-kock write" do
       lock = Sync::RWLock.new(:checked)
       lock.lock_write
-      assert_raises(Sync::Deadlock) { lock.lock_write }
+      assert_raises(Error::Deadlock) { lock.lock_write }
     end
 
     it "raises on unlock_write when not locked" do
       lock = Sync::RWLock.new(:checked)
-      assert_raises(Sync::Error) { lock.unlock_write }
+      assert_raises(Error) { lock.unlock_write }
     end
 
     it "raises on unlock_write from another fiber" do
       lock = Sync::RWLock.new(:checked)
       lock.lock_write
       async do
-        assert_raises(Sync::Error) { lock.unlock_write }
+        assert_raises(Error) { lock.unlock_write }
       end
     end
   end

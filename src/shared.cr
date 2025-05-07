@@ -48,6 +48,8 @@ module Sync
     #
     # WARNING: The value musn't be retained and accessed after the block has
     # returned.
+    #
+    # TODO: find a better method name to convey "grab value in shared mode".
     def read(& : T -> U) : U forall U
       lock.read { yield @value }
     end
@@ -60,6 +62,8 @@ module Sync
     #
     # WARNING: The value musn't be retained and accessed after the block has
     # returned.
+    #
+    # TODO: find a better method name to convey "grab value in exclusive mode".
     def write(& : T -> U) : U forall U
       lock.write { yield @value }
     end

@@ -5,6 +5,9 @@ module Sync
   #
   # For example they can be used as globals, such as constants or class
   # variables, or for closured variables shared with multiple fibers at once.
+  #
+  # A linter can then use this annotation to determine when a shared variable is
+  # safe or not.
   annotation Safe
   end
 end

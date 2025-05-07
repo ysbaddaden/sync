@@ -20,8 +20,8 @@ module Sync
       Unchecked
 
       # The mutex checks whether the current fiber owns the lock. Trying to
-      # relock will raise a `Deadlock` exception, unlocking when unlocked or
-      # while another fiber holds the lock will raise an `Error`.
+      # relock will raise a `Error::Deadlock` exception, unlocking when unlocked
+      # or while another fiber holds the lock will raise an `Error`.
       Checked
 
       # Same as `Checked` with the difference that the mutex allows the same
@@ -36,7 +36,7 @@ module Sync
     end
 
     # Acquires the exclusive lock for the duration of the block. The lock will
-    # automatically be released before returning, or if the block raises an
+    # be released automatically before returning, or if the block raises an
     # exception.
     def synchronize(& : -> U) : U forall U
       lock
@@ -52,7 +52,7 @@ module Sync
       unless @mu.try_lock?
         unless @type.unchecked?
           if @locked_by == Fiber.current
-            raise Deadlock.new unless @type.reentrant?
+            raise Error::Deadlock.new unless @type.reentrant?
             @counter += 1
             return
           end

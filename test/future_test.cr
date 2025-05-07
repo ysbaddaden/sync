@@ -27,14 +27,14 @@ describe Sync::Future do
     it "fails with no reason" do
       value = Sync::Future(Int32).new
       value.fail
-      ex = assert_raises(Failed) { value.get }
+      ex = assert_raises(Error::Failed) { value.get }
       assert_nil ex.message
     end
 
     it "fails with an string" do
       value = Sync::Future(Int32).new
       value.fail("can't compute the value")
-      ex = assert_raises(Failed) { value.get }
+      ex = assert_raises(Error::Failed) { value.get }
       assert_equal "can't compute the value", ex.message
     end
 
@@ -83,7 +83,7 @@ describe Sync::Future do
     it "raises when failed" do
       value = Sync::Future(Int32).new
       value.fail
-      assert_raises(Sync::Failed) { value.get? }
+      assert_raises(Error::Failed) { value.get? }
     end
   end
 
@@ -123,7 +123,7 @@ describe Sync::Future do
     it "raises when failed" do
       value = Sync::Future(Int32).new
       value.fail
-      assert_raises(Sync::Failed) { value.get? }
+      assert_raises(Error::Failed) { value.get? }
     end
   end
 end

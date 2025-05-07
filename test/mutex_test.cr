@@ -108,7 +108,7 @@ describe Sync::Mutex do
     it "raises on deadlock" do
       m = Sync::Mutex.new(:checked)
       m.lock
-      assert_raises(Sync::Deadlock) { m.lock }
+      assert_raises(Error::Deadlock) { m.lock }
     end
   end
 
