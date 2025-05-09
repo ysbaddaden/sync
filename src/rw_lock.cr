@@ -38,8 +38,6 @@ module Sync
 
     def initialize(@type : Type = :checked)
       @mu = MU.new
-      @cv = CV.new
-      @readers = 0_u32
     end
 
     # Acquires the shared (read) lock for the duration of the block.
@@ -59,9 +57,7 @@ module Sync
     # multiple fibers can lock it multiple times each, and never checked.
     # Blocks the calling fiber while the exclusive (write) lock is held.
     def lock_read : Nil
-      @mu.synchronize do
-        @readers += 1
-      end
+      @mu.rlock
     end
 
     # Releases the shared (read) lock. Every fiber that locked must unlock to
@@ -69,11 +65,7 @@ module Sync
     # fiber locked multiple times (reentrant) then it must unlock just as many
     # times.
     def unlock_read : Nil
-      @mu.synchronize do
-        if (@readers -= 1) == 0
-          @cv.broadcast
-        end
-      end
+      @mu.runlock
     end
 
     # Acquires the exclusive (write) lock for the duration of the block.
@@ -99,10 +91,6 @@ module Sync
 
       @mu.lock
 
-      until @readers == 0
-        @cv.wait pointerof(@mu)
-      end
-
       if @type.checked?
         @locked_by = Fiber.current
       end
@@ -111,25 +99,19 @@ module Sync
     # Releases the exclusive (write) lock.
     def unlock_write : Nil
       if @type.checked?
-        owns_lock!
+        owns_write_lock!
         @locked_by = nil
       end
 
-      begin
-        @cv.broadcast
-      ensure
-        @mu.unlock
-      end
+      @mu.unlock
     end
 
-    protected def owns_lock! : Nil
+    protected def owns_write_lock! : Nil
       if (fiber = @locked_by) == Fiber.current
         return
       end
 
-      message = fiber ?
-        "Can't unlock a rwlock locked by another fiber" :
-        "Can't unlock a rwlock that isn't locked"
+      message = fiber ? "Can't unlock a rwlock locked by another fiber" : "Can't unlock a rwlock that isn't locked"
       raise Error.new(message)
     end
   end

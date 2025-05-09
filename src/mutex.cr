@@ -84,9 +84,7 @@ module Sync
         return
       end
 
-      message = fiber ?
-        "Can't unlock a mutex locked by another fiber" :
-        "Can't unlock a mutex that isn't locked"
+      message = fiber ? "Can't unlock a mutex locked by another fiber" : "Can't unlock a mutex that isn't locked"
       raise Error.new(message)
     end
   end

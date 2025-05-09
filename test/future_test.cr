@@ -11,14 +11,14 @@ describe Sync::Future do
     it "can't resolve twice" do
       value = Sync::Future(Int32).new
       value.set(123)
-      assert_raises(Sync::Error) { value.set(456) }
+      assert_raises(RuntimeError) { value.set(456) }
       assert_equal 123, value.get?
     end
 
     it "can't fail anymore" do
       value = Sync::Future(Int32).new
       value.set(321)
-      assert_raises(Sync::Error) { value.fail(Exception.new) }
+      assert_raises(RuntimeError) { value.fail(Exception.new) }
       assert_equal 321, value.get?
     end
   end
@@ -50,7 +50,7 @@ describe Sync::Future do
       exception = Exception.new
 
       value.fail(exception)
-      assert_raises(Sync::Error) { value.fail(Exception.new) }
+      assert_raises(RuntimeError) { value.fail(Exception.new) }
 
       raised_exception = assert_raises(Exception) { value.get }
       assert_same exception, raised_exception
@@ -61,7 +61,7 @@ describe Sync::Future do
       exception = Exception.new
 
       value.fail(exception)
-      assert_raises(Sync::Error) { value.set(123) }
+      assert_raises(RuntimeError) { value.set(123) }
 
       raised_exception = assert_raises(Exception) { value.get }
       assert_same exception, raised_exception
@@ -127,4 +127,3 @@ describe Sync::Future do
     end
   end
 end
-

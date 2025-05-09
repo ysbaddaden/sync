@@ -116,7 +116,7 @@ describe Sync::RWLock do
 
     it "unlocks write despite not being locked" do
       lock = Sync::RWLock.new(:unchecked)
-      lock.unlock_write # nothing raised
+      assert_raises(RuntimeError) { lock.unlock_write } # MU has a safety check
     end
 
     it "unlocks write from another fiber" do

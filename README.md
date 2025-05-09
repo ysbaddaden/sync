@@ -3,13 +3,21 @@
 Synchronization primitives to build concurrent-safe and parallel-safe data
 structures in Crystal, so we can embrace MT with more serenity.
 
+The provided sync primitives are meant to be useful yet low level. They can, and
+should, be used to protect simple resources, but also to build higher level
+constructs, for example an actor library.
+
+The underlying implementations follow the [nsync
+algorithm](https://github.com/google/nsync), that was easy to adapt from threads
+to fibers. Compared to a naive atomic+spinlock mutex, the algorithm is
+incredibly fast and efficient (much less wasted CPU time), and it eventually
+reaches a stable value, whatever how many fibers you put, while the naive
+implementation quickly goes exponential).
+
 ## Status
 
 Experimental: in progress work to flesh out sync primitives that we may want to
 have in Crystal's stdlib at some point.
-
-The implementations follow basic and naive algorithms. They're far from being
-optimized and efficient.
 
 ## Primitives
 
@@ -26,7 +34,7 @@ optimized and efficient.
 
 ### TODO
 
-- [ ] `Sync::Semaphore`
+- [ ] `Sync::Semaphore` (?)
 - [ ] `Sync::ConditionVariable`
 - [ ] `Sync::Condition(T)`
 - [ ] `Sync::Map(K, V)`

@@ -1,5 +1,6 @@
 require "./mu"
 require "./errors"
+require "./waiter"
 
 module Sync
   # An object that will eventually hold a value.
@@ -42,26 +43,27 @@ module Sync
 
     def initialize
       {% if (T.union? && T.union_types.any? { |t| t == Nil }) || T == Nil %}
-        {% raise "Can't create Sync::Future for a nilable type"  %}
+        {% raise "Can't create Sync::Future for a nilable type" %}
       {% end %}
       @value = uninitialized T
       @mu = MU.new
       @state = State::UNSET
-      @waiting = Crystal::PointerLinkedList(Fiber::PointerLinkedListNode).new
+      @waiters = Dll(Waiter).new
     end
 
-    # Sets the value and wakes up pending fibers.
+    # Sets the value, then wakes up pending fibers.
     #
-    # NOTE: A future can only be resolved once. An already failed future cannot
-    # be resolved anymore.
+    # Raises a `RuntimeError` if the future has already been resolved or has
+    # already failed.
     def set(value : T) : T
       resolve(State::RESOLVED) { @value = value }
       value
     end
 
-    # Sets the future as failed and wakes up pending fibers.
+    # Sets the future as failed, then wakes up pending fibers.
     #
-    # NOTE: A future can only fail once. An already resolved future cannot fail.
+    # Raises a `RuntimeError` if the future has already been resolved or has
+    # already failed.
     def fail(reason : Exception | String | Nil = nil) : Nil
       resolve(State::FAILED) { @reason = reason }
     end
@@ -71,7 +73,7 @@ module Sync
 
       unless @state.unset?
         @mu.unlock
-        raise Error.new("Can't resolve a future twice")
+        raise RuntimeError.new("Can't resolve a future twice")
       end
 
       # we need an explicit fence for the compiler and weak cpu architectures
@@ -81,12 +83,11 @@ module Sync
       Atomic.fence(:acquire_release)
       @state = new_state
 
-      waiting = @waiting
-      @waiting.clear
-
       @mu.unlock
 
-      waiting.each(&.value.enqueue)
+      # @waiters is owned by the current fiber (neither #resolve nor #get will
+      # try to access it anymore), we can safely iterate the list
+      @waiters.consume_each(&.value.wake)
     end
 
     # Returns the value if resolved, otherwise returns `nil` immediately.
@@ -106,20 +107,20 @@ module Sync
     def get : T
       loop do
         case @state
-        when State::UNSET
-          waiter = Fiber::PointerLinkedListNode.new(Fiber.current)
-          @mu.lock
-          if @state.unset?
-            @waiting.push pointerof(waiter)
-            @mu.unlock
-            Fiber.suspend
-          else
-            @mu.unlock
-          end
         when State::RESOLVED
           return @value
         when State::FAILED
           raise_exception!
+        when State::UNSET
+          waiter = Waiter.init(:reader)
+          @mu.lock
+          if @state.unset?
+            @waiters.push(waiter)
+            @mu.unlock
+            waiter.value.wait
+          else
+            @mu.unlock
+          end
         end
       end
     end

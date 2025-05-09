@@ -2,7 +2,7 @@ require "minitest/autorun"
 require "wait_group"
 
 class Minitest::Test
-  protected def eventually(timeout : Time::Span = 5.seconds, &)
+  protected def eventually(timeout : Time::Span = 1.second, &)
     start = Time.monotonic
 
     loop do
