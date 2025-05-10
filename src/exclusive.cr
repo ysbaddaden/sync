@@ -1,3 +1,4 @@
+require "./lockable"
 require "./mutex"
 
 module Sync
@@ -29,7 +30,9 @@ module Sync
   # ```
   @[Sync::Safe]
   class Exclusive(T)
-    def initialize(@value : T, type : Mutex::Type = :checked)
+    include Lockable
+
+    def initialize(@value : T, type : Type = :checked)
       @lock = uninitialized ReferenceStorage(Mutex)
       Mutex.unsafe_construct(pointerof(@lock), type)
     end
@@ -113,6 +116,10 @@ module Sync
     # guarantee that the current fiber acquired the lock or to access a value
     # that can be written in a single store operation into memory.
     def unsafe_set(@value : T) : T
+    end
+
+    protected def mu : Pointer(MU)
+      lock.mu
     end
   end
 end

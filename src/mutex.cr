@@ -1,4 +1,5 @@
 require "./errors"
+require "./lockable"
 require "./mu"
 
 module Sync
@@ -14,21 +15,9 @@ module Sync
   # NOTE: Consider `Exclusive(T)` to protect a value `T` with a `Mutex`.
   @[Sync::Safe]
   class Mutex
-    enum Type
-      # The mutex doesn't do any checks. Trying to relock will cause a deadlock,
-      # unlocking from any fiber is undefined behavior.
-      Unchecked
+    include Lockable
 
-      # The mutex checks whether the current fiber owns the lock. Trying to
-      # relock will raise a `Error::Deadlock` exception, unlocking when unlocked
-      # or while another fiber holds the lock will raise an `Error`.
-      Checked
-
-      # Same as `Checked` with the difference that the mutex allows the same
-      # fiber to re-lock as many times as needed, then must be unlocked as many
-      # times as it was re-locked.
-      Reentrant
-    end
+    protected getter type : Type
 
     def initialize(@type : Type = :checked)
       @counter = 0
@@ -69,8 +58,15 @@ module Sync
     # Releases the exclusive lock.
     def unlock : Nil
       unless @type.unchecked?
-        owns_lock!
-
+        unless owns_lock?
+          message =
+            if @locked_by
+              "Can't unlock Sync::Mutex locked by another fiber"
+            else
+              "Can't unlock Sync::Mutex that isn't locked"
+            end
+          raise Error.new(message)
+        end
         if @type.reentrant?
           return unless (@counter -= 1) == 0
         end
@@ -79,13 +75,12 @@ module Sync
       @mu.unlock
     end
 
-    protected def owns_lock! : Nil
-      if (fiber = @locked_by) == Fiber.current
-        return
-      end
+    protected def owns_lock? : Bool
+      @locked_by == Fiber.current
+    end
 
-      message = fiber ? "Can't unlock a mutex locked by another fiber" : "Can't unlock a mutex that isn't locked"
-      raise Error.new(message)
+    protected def mu : Pointer(MU)
+      pointerof(@mu)
     end
   end
 end

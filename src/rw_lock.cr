@@ -1,5 +1,6 @@
-require "./mu"
 require "./errors"
+require "./lockable"
+require "./mu"
 
 module Sync
   # A multiple readers and exclusive writer lock to protect critical sections.
@@ -20,22 +21,12 @@ module Sync
   # NOTE: Consider `Shared(T)` to protect a value `T` with a `RWLock`.
   @[Sync::Safe]
   class RWLock
-    enum Type
-      # The lock doesn't do any checks. Trying to relock will cause a deadlock,
-      # unlocking from any fiber is undefined behavior.
-      Unchecked
+    include Lockable
 
-      # The lock checks whether the current fiber owns the lock. Trying to
-      # relock will raise a `Error::Deadlock` exception, unlocking when unlocked
-      # or while another fiber holds the lock will raise an `Error`.
-      Checked
-
-      # TODO: Reentrant
-    end
-
-    @locked_by : Fiber?
+    protected getter type : Type
 
     def initialize(@type : Type = :checked)
+      @counter = 0
       @mu = MU.new
     end
 
@@ -52,17 +43,26 @@ module Sync
       end
     end
 
-    # Acquires the shared (read) lock. The shared lock is always reentrant,
-    # multiple fibers can lock it multiple times each, and never checked.
-    # Blocks the calling fiber while the exclusive (write) lock is held.
+    # Tries to acquire the shared (read) lock without blocking. Returns true
+    # when acquired, otherwise returns false immediately.
+    def try_lock_read? : Bool
+      @mu.try_rlock?
+    end
+
+    # Acquires the shared (read) lock.
+    #
+    # The shared lock is always reentrant, multiple fibers can lock it multiple
+    # times each, and never checked. Blocks the calling fiber while the
+    # exclusive (write) lock is held.
     def lock_read : Nil
       @mu.rlock
     end
 
-    # Releases the shared (read) lock. Every fiber that locked must unlock to
-    # actually release the reader lock, so a writer can lock for example. If a
-    # fiber locked multiple times (reentrant) then it must unlock just as many
-    # times.
+    # Releases the shared (read) lock.
+    #
+    # Every fiber that locked must unlock to actually release the reader lock
+    # (so a writer can lock). If a fiber locked multiple times (reentrant
+    # behavior) then it must unlock that many times.
     def unlock_read : Nil
       @mu.runlock
     end
@@ -81,37 +81,58 @@ module Sync
       end
     end
 
+    # Tries to acquire the exclusive (write) lock without blocking. Returns true
+    # when acquired, otherwise returns false immediately.
+    def try_lock_write? : Bool
+      @mu.try_lock?
+    end
+
     # Acquires the exclusive (write) lock. Blocks the calling fiber while the
     # shared or exclusive (write) lock is held.
     def lock_write : Nil
-      if @type.checked? && (@locked_by == Fiber.current)
-        raise Error::Deadlock.new
+      unless @mu.try_lock?
+        unless @type.unchecked?
+          if @locked_by == Fiber.current
+            raise Error::Deadlock.new unless @type.reentrant?
+            @counter += 1
+            return
+          end
+        end
+        @mu.lock_slow
       end
 
-      @mu.lock
-
-      if @type.checked?
+      unless @type.unchecked?
         @locked_by = Fiber.current
+        @counter = 1 if @type.reentrant?
       end
     end
 
     # Releases the exclusive (write) lock.
     def unlock_write : Nil
-      if @type.checked?
-        owns_write_lock!
+      unless @type.unchecked?
+        unless owns_lock?
+          message =
+            if @locked_by
+              "Can't unlock Sync::RWLock locked by another fiber"
+            else
+              "Can't unlock Sync::RWLock that isn't locked"
+            end
+          raise Error.new(message)
+        end
+        if @type.reentrant?
+          return unless (@counter -= 1) == 0
+        end
         @locked_by = nil
       end
-
       @mu.unlock
     end
 
-    protected def owns_write_lock! : Nil
-      if (fiber = @locked_by) == Fiber.current
-        return
-      end
+    protected def owns_lock? : Bool
+      @locked_by == Fiber.current
+    end
 
-      message = fiber ? "Can't unlock a rwlock locked by another fiber" : "Can't unlock a rwlock that isn't locked"
-      raise Error.new(message)
+    protected def mu : Pointer(MU)
+      pointerof(@mu)
     end
   end
 end

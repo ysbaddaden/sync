@@ -1,3 +1,4 @@
+require "./lockable"
 require "./rw_lock"
 
 module Sync
@@ -30,7 +31,9 @@ module Sync
   # ```
   @[Sync::Safe]
   class Shared(T)
-    def initialize(@value : T, type : RWLock::Type = :checked)
+    include Lockable
+
+    def initialize(@value : T, type : Type = :checked)
       @lock = uninitialized ReferenceStorage(RWLock)
       RWLock.unsafe_construct(pointerof(@lock), type)
     end
@@ -48,8 +51,6 @@ module Sync
     #
     # WARNING: The value musn't be retained and accessed after the block has
     # returned.
-    #
-    # TODO: find a better method name to convey "grab value in shared mode".
     def read(& : T -> U) : U forall U
       lock.read { yield @value }
     end
@@ -62,8 +63,6 @@ module Sync
     #
     # WARNING: The value musn't be retained and accessed after the block has
     # returned.
-    #
-    # TODO: find a better method name to convey "grab value in exclusive mode".
     def write(& : T -> U) : U forall U
       lock.write { yield @value }
     end
@@ -128,6 +127,10 @@ module Sync
     # that the current fiber acquired the lock or to access a value that can be
     # written in a single store operation into memory.
     def unsafe_set(@value : T) : T
+    end
+
+    protected def mu : Pointer(MU)
+      lock.mu
     end
   end
 end
