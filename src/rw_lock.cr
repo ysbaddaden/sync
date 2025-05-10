@@ -1,5 +1,4 @@
 require "./mu"
-require "./cv"
 require "./errors"
 
 module Sync

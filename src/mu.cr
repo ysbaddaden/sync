@@ -109,15 +109,28 @@ module Sync
         add_on_acquire: RLOCK)
     end
 
-    private def lock_slow_impl(waiter, zero_to_acquire, add_on_acquire, set_on_waiting = 0_u32, clear_on_acquire = 0_u32) : Nil
-      attempts = 0
-      wait_count = 0
+    protected def lock_slow(waiter : Pointer(Waiter), clear : UInt32)
+      if waiter.value.writer?
+        zero_to_acquire = ANY_LOCK
+        add_on_acquire = WLOCK
+        set_on_waiting = WRITER_WAITING
+        clear_on_acquire = WRITER_WAITING
+      else
+        zero_to_acquire = WLOCK | WRITER_WAITING
+        add_on_acquire = RLOCK
+        set_on_waiting = 0_u32
+        clear_on_acquire = 0_u32
+      end
+      lock_slow_impl(waiter, zero_to_acquire, add_on_acquire, set_on_waiting, clear_on_acquire, clear)
+    end
 
-      # flags
+    private def lock_slow_impl(waiter, zero_to_acquire, add_on_acquire, set_on_waiting = 0_u32, clear_on_acquire = 0_u32, clear = 0_u32) : Nil
       long_wait = 0_u32
       zero_to_acquire |= LONG_WAIT
       set_on_waiting |= WAITING
-      clear = 0_u32
+
+      attempts = 0
+      wait_count = 0
 
       while true
         word = @word.get(:relaxed)
@@ -289,6 +302,63 @@ module Sync
         word, success = @word.compare_and_set(word, (word | set) & ~(SPINLOCK | clear), :release, :relaxed)
         return if success
       end
+    end
+
+    protected def try_transfer(wake : Pointer(Dll(Waiter)), first_waiter : Pointer(Waiter), all_readers : Bool) : Nil
+      old_word = @word.get(:relaxed)
+
+      first_is_writer = first_waiter.value.writer?
+      zero_to_acquire = ANY_LOCK | LONG_WAIT
+      zero_to_acquire |= WRITER_WAITING unless first_is_writer
+      first_cant_acquire = (old_word & zero_to_acquire) != 0
+
+      next_waiter = @waiters.next?(first_waiter)
+
+      if ((old_word & ANY_LOCK) != 0 &&
+          (old_word & SPINLOCK) == 0 &&
+          (first_cant_acquire || (next_waiter && !all_readers)))
+
+        _, success = @word.compare_and_set(old_word, old_word | SPINLOCK | WAITING, :acquire, :relaxed)
+        return unless success
+
+        set_on_release = 0_u32
+        transferred_a_writer = false
+        woke_a_reader = false
+
+        if first_cant_acquire
+          transfer(first_waiter, from: wake)
+          transferred_a_writer = first_is_writer
+        else
+          woke_a_reader = !first_is_writer
+
+          @waiters.each do |waiter|
+            is_writer = waiter.value.writer?
+
+            if first_cant_acquire || first_is_writer || is_writer
+              transfer(waiter, from: wake)
+              transferred_a_writer ||= is_writer
+            else
+              woke_a_reader ||= !is_writer
+            end
+          end
+        end
+
+        if transferred_a_writer && !woke_a_reader
+          set_on_release |= WRITER_WAITING
+        end
+
+        release_spinlock(set_on_release)
+      end
+    end
+
+    private def transfer(waiter, from)
+      from.value.delete(waiter)
+
+      # no need to set waiting (it's already true), but we must tell CV#wait
+      # that the waiter has been transferred (it's no longer a CV waiter)
+      waiter.value.cv_mu = Pointer(MU).null
+
+      @waiters.push(waiter)
     end
   end
 end
