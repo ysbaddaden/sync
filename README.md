@@ -19,6 +19,11 @@ implementation quickly goes exponential).
 Experimental: in progress work to flesh out sync primitives that we may want to
 have in Crystal's stdlib at some point.
 
+## Documentation
+
+Run `make docs` or head to
+[CrystalDoc.info](https://crystaldoc.info/github/ysbaddaden/sync/).
+
 ## Primitives
 
 - `Sync::Safe` to annotate types as (a)sync safe.
