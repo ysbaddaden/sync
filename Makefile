@@ -13,8 +13,11 @@ all:
 test: .PHONY
 	$(CRYSTAL) run $(CRFLAGS) $(TESTS) -- $(OPTS)
 
-bench/%: bench/%.cr src/*.cr src/**/*.cr
+bench/%: bench/%.cr src/*.cr
 	$(CRYSTAL) build $(CRFLAGS) --release $< -o $@
+
+bench/%_sync: bench/%.cr src/*.cr
+	$(CRYSTAL) build $(CRFLAGS) -DSYNC --release $< -o $@
 
 docs: .PHONY
 	$(CRYSTAL) docs src/sync.cr
