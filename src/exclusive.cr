@@ -126,7 +126,7 @@ module Sync
       lock.locked_by?
     end
 
-    protected def locked_by=(locked_by : Fiber?)  : Fiber?
+    protected def locked_by=(locked_by : Fiber?) : Fiber?
       lock.locked_by = locked_by
     end
 

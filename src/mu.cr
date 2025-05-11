@@ -315,9 +315,8 @@ module Sync
       next_waiter = @waiters.next?(first_waiter)
 
       if ((old_word & ANY_LOCK) != 0 &&
-          (old_word & SPINLOCK) == 0 &&
-          (first_cant_acquire || (next_waiter && !all_readers)))
-
+         (old_word & SPINLOCK) == 0 &&
+         (first_cant_acquire || (next_waiter && !all_readers)))
         _, success = @word.compare_and_set(old_word, old_word | SPINLOCK | WAITING, :acquire, :relaxed)
         return unless success
 

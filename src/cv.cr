@@ -28,7 +28,7 @@ module Sync
   # :nodoc:
   @[Sync::Safe]
   struct CV
-    SPINLOCK = 1_u32
+    SPINLOCK  = 1_u32
     NON_EMPTY = 2_u32
 
     def initialize
