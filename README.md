@@ -7,7 +7,7 @@ The provided sync primitives are meant to be useful yet low level. They can, and
 should, be used to protect simple resources, but also to build higher level
 constructs, for example an actor library.
 
-The underlying implementations follow the [nsync
+The underlying implementation follows the [nsync
 algorithm](https://github.com/google/nsync), that was easy to adapt from threads
 to fibers. Compared to a naive atomic+spinlock mutex, the algorithm is
 incredibly fast and efficient (much less wasted CPU time), and it eventually
@@ -38,6 +38,20 @@ have in Crystal's stdlib at some point.
 
 - [ ] `Sync::Map(K, V)`
 - [ ] `Sync::Semaphore` (?)
+
+### Performance
+
+While the performance of `Mutex` in stdlib is very performant when uncontended
+or with only a couple threads (MT:2), the nsync algorithm used by `Sync::Mutex`
+quickly proves much more performant and efficient, it even reaches expected
+performance and efficiency (whatever the number of fibers), while  `Mutex`
+performance drops, and efficiency plummets (high CPU time).
+
+Here are the results of running `bench/mutex.cr` in a multithreaded execution
+context (28 threads) on an Intel 14700K.
+
+<img src="mutex_real.svg">
+<img src="mutex_cpu.svg">
 
 ## License
 
