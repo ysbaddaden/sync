@@ -1,5 +1,6 @@
 require "./mutex"
 require "./rw_lock"
+require "./condition_variable"
 require "./exclusive"
 require "./shared"
 require "./future"

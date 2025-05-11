@@ -17,8 +17,6 @@ module Sync
   class Mutex
     include Lockable
 
-    protected getter type : Type
-
     def initialize(@type : Type = :checked)
       @counter = 0
       @mu = MU.new
@@ -74,6 +72,10 @@ module Sync
       end
       @mu.unlock
     end
+
+    protected getter type : Type
+    protected property counter : Int32
+    protected property? locked_by : Fiber?
 
     protected def owns_lock? : Bool
       @locked_by == Fiber.current
