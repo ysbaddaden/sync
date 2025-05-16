@@ -39,9 +39,10 @@ Run `make docs` or head to
   mutual exclusion.
 - `Sync::Future(T)` to delegate the computation of a value `T` to another fiber.
 
+- `Sync::Map(K, V)` for a distributed hash-like data structure.
+
 ### TODO
 
-- [ ] `Sync::Map(K, V)`
 - [ ] `Sync::Semaphore` (?)
 
 ### Performance
