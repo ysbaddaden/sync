@@ -89,7 +89,7 @@ module Sync
       end
     end
 
-    protected def initialize(@buckets, @bitshift, size : Int32)
+    protected def initialize(@buckets, @bitshift)
     end
 
     def size : Int32
@@ -238,22 +238,23 @@ module Sync
     end
 
     def dup : Map(K, V)
-      size = 0
       buckets = Slice(Bucket(K, V)).new(@buckets.size) do |i|
         bucket = @buckets.to_unsafe + i
         bucket.value.read do
           copy = Bucket(K, V).new(bucket.value.@h.capacity)
-          size += copy.@h.size = bucket.value.@h.size
+          copy.@h.size = bucket.value.@h.size
           copy.@h.@entries.copy_from(bucket.value.@h.@entries, bucket.value.@h.capacity)
           copy
         end
       end
-      Map(K, V).new(buckets, @bitshift, size)
+      Map(K, V).new(buckets, @bitshift)
     end
 
     def to_h : Hash(K, V)
       hash = Hash(K, V).new(size)
       each_bucket do |bucket|
+        next if bucket.value.@h.empty?
+
         bucket.value.read do
           bucket.value.@h.each do |k, v|
             hash[k] = v
@@ -266,6 +267,8 @@ module Sync
     def to_a : Array({K, V})
       array = Array({K, V}).new(size)
       each_bucket do |bucket|
+        next if bucket.value.@h.empty?
+
         bucket.value.read do
           bucket.value.@h.each do |k, v|
             array << {k, v}
