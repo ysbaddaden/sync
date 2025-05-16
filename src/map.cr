@@ -13,11 +13,15 @@ module Sync
   # over a shared map is significantly reduced when compared to a single `Hash`
   # protected with a single `RWLock`, leading to huge performance improvements.
   #
-  # The main drawback is large memory usage. By default the number of buckets is
-  # 4 times the number of the system CPU count increased to the next power of
-  # two, each with a minimum capacity of 4 entries. For example a 28-cores CPU
-  # will create 128 buckets of 4 entries (1024 entries), and a `Map(String,
-  # Float64)` will need at least 12KB of memory.
+  # The main drawback is memory usage. By default the number of buckets is 4
+  # times the number of the system CPU count increased to the next power of two,
+  # each with a minimum capacity of 4 entries. For example a 28-cores CPU will
+  # create 128 buckets of 4 entries (initial capacity of 1024 entries). Just the
+  # bucket slice is 3KB and the entries for a `Map(String, Float64)` will need
+  # at least 12KB of memory, for a total of 15KB for an empty map!
+  #
+  # Each bucket will grow automatically when they reach 75% occupancy; they may
+  # also shrink when deleted entries reach 25% of the total capacity.
   #
   # Follows the `Hash` interface, but isn't a drop-in replacement.
   #
