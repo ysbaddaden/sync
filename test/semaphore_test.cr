@@ -17,11 +17,11 @@ class Sync::SemaphoreTest < Minitest::Test
           run.add(1, :relaxed)
           ready.wait
 
-          semaphore.wait
+          semaphore.acquire
           counter.add(1, :relaxed)
 
           step.wait
-          semaphore.signal
+          semaphore.release
         end
       end
 
