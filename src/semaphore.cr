@@ -7,10 +7,16 @@ module Sync
   #
   # Allows a limited number of fibers to enter a critical section at a time.
   #
+  # A counting semaphore can be a simple alternative to starting multiple
+  # fibers, and requiring a `Channel` to pass work to execute, and maybe a
+  # `Future` to get a value back. The semaphore is simpler, but starting
+  # explicit fibers might prove better for your application, depending on your
+  # workload.
+  #
   # In the following example, only 4 fibers can compute a password hash
-  # concurrently. If the server has more than 4 CPU cores then only 4 threads
-  # may be blocked hashing a password, while the other threads will keep
-  # processing requests.
+  # concurrently. If the computer has more than 4 CPU cores then only 4 threads
+  # may be blocked hashing a password, while the other threads will keep running
+  # the other fibers.
   #
   # ```
   # LOGINS = Sync::Semaphore.new(4)
@@ -21,6 +27,10 @@ module Sync
   #   end
   # end
   # ```
+  #
+  # NOTE: A semaphore should have a value stricly greater than 1. Prefer a
+  # `Mutex` if the concurrency of the critical section must be limited to one
+  # exclusive fiber.
   @[Sync::Safe]
   struct Semaphore
     def initialize(value : Int32)
@@ -29,10 +39,15 @@ module Sync
       @waiters = Dll(Waiter).new
     end
 
+    # Returns the current value. Information only, the may be changed by the
+    # time the method returns.
     def value : Int32
       @value.get(:relaxed)
     end
 
+    # Acquires the semaphore, possibly blocking the calling fiber, then yields
+    # the block and eventually releases the semaphore. Returns the value
+    # returned by the block.
     def synchronize(& : -> U) : U forall U
       acquire
       begin
