@@ -7,9 +7,9 @@ module Sync
   # Automatically grows when reaching 75% occupancy (used+deleted); rehashes
   # when deleted entries reach 25% occupancy, which might shrink the buffer.
   class H(K, V)
-    private FREE = 0
+    private FREE      = 0
     private ALLOCATED = 1
-    private DELETED = 2
+    private DELETED   = 2
 
     MINSIZE = 4
 

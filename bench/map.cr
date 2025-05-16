@@ -243,26 +243,26 @@ main = WaitGroup.new(1)
 
 PROFILES = {
   "reader" => {
-    "READ" => 98,
+    "READ"   => 98,
     "INSERT" => 1,
     "UPDATE" => 0,
     "UPSERT" => 0,
-    "ERASE" => 1,
+    "ERASE"  => 1,
   },
   "exchange" => {
-    "READ" => 10,
+    "READ"   => 10,
     "INSERT" => 40,
     "UPDATE" => 10,
     "UPSERT" => 0,
-    "ERASE" => 40,
+    "ERASE"  => 40,
   },
   "rapid_grow" => {
-    "READ" => 5,
+    "READ"   => 5,
     "INSERT" => 80,
     "UPDATE" => 10,
     "UPSERT" => 0,
-    "ERASE" => 5,
-  }
+    "ERASE"  => 5,
+  },
 }
 
 read_percentage = 0

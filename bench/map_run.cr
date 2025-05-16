@@ -30,7 +30,7 @@ concurrencies.each do |concurrency|
   profiles.each do |mode|
     types.each do |type|
       STDOUT.print '\t'
-      STDOUT.print (table[type][mode][concurrency].sum / attempts / 1_000_000)
+      STDOUT.print table[type][mode][concurrency].sum / attempts / 1_000_000
     end
   end
   puts
