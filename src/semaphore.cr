@@ -34,17 +34,17 @@ module Sync
     end
 
     def synchronize(& : -> U) : U forall U
-      wait
+      acquire
       begin
         yield
       ensure
-        signal
+        release
       end
     end
 
     # Decrements the semaphore. Blocks the calling fiber if the new value is
     # negative, otherwise returns immediately (consumed an unit).
-    def wait : Nil
+    def acquire : Nil
       if @value.sub(1, :acquire_release) <= 0
         waiter = Waiter.init(:reader)
 
@@ -59,7 +59,7 @@ module Sync
 
     # Increments the semaphore. Resumes a blocked fiber if the value was
     # negative.
-    def signal : Nil
+    def release : Nil
       if @value.add(1, :acquire_release) < 0
         waiter = Pointer(Waiter).null
 
