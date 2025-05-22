@@ -28,24 +28,9 @@ module Sync
     #
     # The calling fiber will be woken by `#signal` or `#broadcast`.
     def wait : Nil
-      type, mu = @lock.type, @lock.mu
-
-      unless type.unchecked?
-        if mu.value.held?
-          raise ArgumentError.new("Lock held by another fiber") unless @lock.owns_lock?
-          @lock.locked_by = nil
-          @lock.counter -= 1 if type.reentrant?
-        elsif !mu.value.rheld?
-          raise ArgumentError.new("Lock not held")
-        end
-      end
-
-      @cv.wait(mu)
-
-      unless type.unchecked? || mu.value.rheld?
-        @lock.locked_by = Fiber.current
-        @lock.counter += 1 if type.reentrant?
-      end
+      # delegate to lockable so it can run pre-unlock checks and cleanup, then
+      # reset after-lock values (locked by, reentrant counter)
+      @lock.wait pointerof(@cv)
     end
 
     # Wakes up one waiting fiber.

@@ -125,16 +125,27 @@ module Sync
       @mu.unlock
     end
 
-    protected getter type : Type
-    protected property? locked_by : Fiber?
-    protected property counter : Int32
+    protected def wait(cv : Pointer(CV)) : Nil
+      unless @type.unchecked?
+        if @mu.held?
+          raise Error.new("Can't unlock Sync::RWLock locked by another fiber") unless owns_lock?
+          @locked_by = nil
+          @counter -= 1 if @type.reentrant?
+        elsif !@mu.rheld?
+          raise Error.new("Can't unlock Sync::RWLock that isn't locked")
+        end
+      end
+
+      cv.value.wait pointerof(@mu)
+
+      unless @type.unchecked? || @mu.rheld?
+        @locked_by = Fiber.current
+        @counter += 1 if @type.reentrant?
+      end
+    end
 
     protected def owns_lock? : Bool
       @locked_by == Fiber.current
-    end
-
-    protected def mu : Pointer(MU)
-      pointerof(@mu)
     end
   end
 end

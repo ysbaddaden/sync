@@ -18,12 +18,6 @@ module Sync
       Reentrant
     end
 
-    protected abstract def type : Type
-    protected abstract def locked_by? : Fiber?
-    protected abstract def locked_by=(locked_by : Fiber?) # : Fiber?
-    protected abstract def counter : Int32
-    protected abstract def counter=(counter : Int32) # : Int32
-    protected abstract def owns_lock? : Bool
-    protected abstract def mu : Pointer(MU)
+    protected abstract def wait(cv : Pointer(CV)) : Nil
   end
 end
