@@ -71,11 +71,12 @@ module Sync
     # the value with the one returned by the block. The lock is released before
     # returning.
     #
-    # The current value is owned: it can be safely mutated and even retained
+    # The current value is now owned: it can be safely retained and mutated even
     # after the block returned.
     #
-    # WARNING: The new value musn't be accessed after the block has returned.
-    def replace(& : T -> T) : T
+    # WARNING: The new value musn't be retained and accessed after the block has
+    # returned.
+    def replace(& : T -> T) : Nil
       lock.write { @value = yield @value }
     end
 
@@ -91,7 +92,7 @@ module Sync
       lock.read { @value.clone }
     end
 
-    # Locks in shared mode and returns the value.
+    # Locks in shared mode and returns the value. Unlocks before returning.
     #
     # Always acquires the lock, so reading the value is synchronized in relation
     # with the other methods. However, safely accessing the returned value

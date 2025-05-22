@@ -56,12 +56,12 @@ module Sync
     # Locks the mutex, yields the value and eventually replaces the value with
     # the one returned by the block. The lock is released before returning.
     #
-    # The yielded value is owned: it can be safely mutated and even retained
+    # The current value is now owned: it can be safely retained and mutated even
     # after the block returned.
     #
     # WARNING: The new value musn't be retained and accessed after the block has
     # returned.
-    def replace(& : T -> T) : T
+    def replace(& : T -> T) : Nil
       lock.synchronize { @value = yield @value }
     end
 
