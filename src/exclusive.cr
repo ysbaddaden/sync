@@ -118,32 +118,8 @@ module Sync
     def unsafe_set(@value : T) : T
     end
 
-    protected def type : Type
-      lock.type
-    end
-
-    protected def locked_by? : Fiber?
-      lock.locked_by?
-    end
-
-    protected def locked_by=(locked_by : Fiber?) : Fiber?
-      lock.locked_by = locked_by
-    end
-
-    protected def counter : Int32
-      lock.counter
-    end
-
-    protected def counter=(counter : Int32)
-      lock.counter = counter
-    end
-
-    protected def owns_lock? : Bool
-      lock.owns_lock?
-    end
-
-    protected def mu : Pointer(MU)
-      lock.mu
+    protected def wait(cv : Pointer(CV)) : Nil
+      lock.wait(cv)
     end
   end
 end
