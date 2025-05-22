@@ -97,7 +97,7 @@ module Sync
     #
     # Always acquires and releases the lock, so writing the value is always
     # synchronized with the other methods.
-    def set(value : T) : T forall T
+    def set(value : T) : Nil
       lock.synchronize { @value = value }
     end
 
