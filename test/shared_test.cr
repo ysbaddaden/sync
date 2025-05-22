@@ -12,14 +12,14 @@ describe Sync::Shared do
     ary1 = [1, 2, 3, 4, 5]
     var = Sync::Shared.new(ary1)
     var.write { |val| val << 6 }
-    assert_same ary1, var.get
+    assert_same ary1, var.value
     assert_equal [1, 2, 3, 4, 5, 6], ary1
   end
 
   it "#get" do
     ary = [1, 2, 3, 4, 5]
     var = Sync::Shared.new(ary)
-    assert_same ary, var.get
+    assert_same ary, var.value
   end
 
   it "#set" do
@@ -28,7 +28,7 @@ describe Sync::Shared do
 
     var = Sync::Shared.new(ary1)
     var.set(ary2)
-    assert_same ary2, var.get
+    assert_same ary2, var.value
   end
 
   it "#replace" do
@@ -40,7 +40,7 @@ describe Sync::Shared do
       assert_same ary1, value
       ary2
     end
-    assert_same ary2, var.get
+    assert_same ary2, var.value
   end
 
   it "#dup_value" do

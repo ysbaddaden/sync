@@ -104,7 +104,7 @@ module Sync
     # WARNING: Breaks the shared/exclusive guarantees, since the returned value
     # outlives the lock; it can be accessed in parallel to the synchronized
     # methods.
-    def get : T
+    def value : T
       lock.read { @value }
     end
 
