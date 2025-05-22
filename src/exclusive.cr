@@ -77,7 +77,7 @@ module Sync
       lock.synchronize { @value.clone }
     end
 
-    # Locks the mutex and returns the value. Unlocks the mutex before returning.
+    # Locks the mutex and returns the value. Unlocks before returning.
     #
     # Always acquires the lock, so reading the value is synchronized in relation
     # with the other methods. However, safely accessing the returned value
@@ -89,7 +89,7 @@ module Sync
     # WARNING: Breaks the mutual exclusion guarantee, since the returned value
     # outlives the lock it can be accessed in parallel to the synchronized
     # methods.
-    def get : T
+    def value : T
       lock.synchronize { @value }
     end
 
