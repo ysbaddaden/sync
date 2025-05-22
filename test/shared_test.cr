@@ -43,21 +43,21 @@ describe Sync::Shared do
     assert_same ary2, var.get
   end
 
-  it "#dup" do
+  it "#dup_value" do
     ary = [[1, 2, 3, 4, 5]]
     var = Sync::Shared.new(ary)
 
-    copy = var.dup
+    copy = var.dup_value
     refute_same ary, copy
     assert_same ary[0], copy[0]
     assert_equal ary, copy
   end
 
-  it "#clone" do
+  it "#clone_value" do
     ary = [[1, 2, 3, 4, 5]]
     var = Sync::Shared.new(ary)
 
-    copy = var.clone
+    copy = var.clone_value
     refute_same ary, copy
     refute_same ary[0], copy[0]
     assert_equal ary, copy
@@ -124,9 +124,9 @@ describe Sync::Shared do
       wg.spawn(name: "dup-clone") do
         100.times do |i|
           if i % 2 == 0
-            var.dup
+            var.dup_value
           else
-            var.clone
+            var.clone_value
           end
           Fiber.yield
         end

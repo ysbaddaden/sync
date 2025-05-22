@@ -67,13 +67,13 @@ module Sync
 
     # Locks the mutex and returns a shallow copy of the value. The lock is
     # released before returning the new value.
-    def dup : T
+    def dup_value : T
       lock.synchronize { @value.dup }
     end
 
     # Locks the mutex and returns a deep copy of the value. The lock is
     # released before returning the new value.
-    def clone : T
+    def clone_value : T
       lock.synchronize { @value.clone }
     end
 
@@ -83,8 +83,8 @@ module Sync
     # with the other methods. However, safely accessing the returned value
     # entirely depends on the safety of `T`, which should be `Sync::Safe`.
     #
-    # Prefer `#dup` or `#clone` to get a shallow or deep copy of the value
-    # instead.
+    # Prefer `#dup_value` or `#clone_value` to get a shallow or deep copy of the
+    # value instead.
     #
     # WARNING: Breaks the mutual exclusion guarantee, since the returned value
     # outlives the lock it can be accessed in parallel to the synchronized
