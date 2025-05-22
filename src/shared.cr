@@ -109,7 +109,7 @@ module Sync
     end
 
     # Locks in exclusive mode and sets the value.
-    def set(value : T) : T
+    def set(value : T) : Nil
       lock.write { @value = value }
     end
 
