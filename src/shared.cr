@@ -91,12 +91,16 @@ module Sync
     # mutate it, or the value is returned by copy anyway), and taking a copy can
     # help release the lock early, instead of keeping the lock acquired for a
     # while, preventing progress of fibers trying to lock exclusively.
+    #
+    # @[Experimental("The method may not have much value over #read(&.dup)")]
     def dup_value : T
       lock.read { @value.dup }
     end
 
     # Locks in shared mode and returns a deep copy of the value. The lock is
     # released before returning the new value.
+    #
+    # @[Experimental("The method may not have much value over #read(&.clone)")]
     def clone_value : T
       lock.read { @value.clone }
     end
@@ -113,6 +117,8 @@ module Sync
     # WARNING: Breaks the shared/exclusive guarantees since the returned value
     # outlives the lock, the value can be accessed concurrently to the
     # synchronized methods.
+    #
+    # @[Experimental("The method may not have much value over #read(&.itself)")]
     def value : T
       lock.read { @value }
     end
