@@ -55,7 +55,7 @@ module Sync
     #
     # WARNING: The value musn't be retained and accessed after the block has
     # returned.
-    def read(& : T -> U) : U forall U
+    def shared(& : T -> U) : U forall U
       lock.read { yield @value }
     end
 
@@ -67,7 +67,7 @@ module Sync
     #
     # WARNING: The value musn't be retained and accessed after the block has
     # returned.
-    def write(& : T -> U) : U forall U
+    def exclusive(& : T -> U) : U forall U
       lock.write { yield @value }
     end
 

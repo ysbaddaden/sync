@@ -2,17 +2,17 @@ require "./test_helper"
 require "../src/shared"
 
 describe Sync::Shared do
-  it "#read(&)" do
+  it "#shared(&)" do
     ary = [1, 2, 3, 4, 5]
     var = Sync::Shared.new(ary)
-    var.read { |val| assert_same ary, val }
+    var.shared { |val| assert_same ary, val }
   end
 
-  it "#write(&)" do
+  it "#exclusive(&)" do
     ary1 = [1, 2, 3, 4, 5]
     var = Sync::Shared.new(ary1)
-    var.write { |val| val << 6 }
-    assert_same ary1, var.value
+    var.exclusive { |val| val << 6 }
+    assert_same ary1, var.get
     assert_equal [1, 2, 3, 4, 5, 6], ary1
   end
 
@@ -88,9 +88,9 @@ describe Sync::Shared do
     counter = Atomic(Int64).new(0)
 
     10.times do
-      spawn(name: "get") do
+      spawn(name: "shared-read") do
         100.times do
-          var.read do |value|
+          var.shared do |value|
             value.each { counter.add(1, :relaxed) }
           end
           Fiber.yield
@@ -99,9 +99,9 @@ describe Sync::Shared do
     end
 
     5.times do
-      wg.spawn(name: "get-mutates") do
+      wg.spawn(name: "exclusive-write") do
         100.times do
-          var.write do |value|
+          var.exclusive do |value|
             100.times { value << value.size }
           end
           Fiber.yield
@@ -169,7 +169,7 @@ describe Sync::Shared do
       contexts << Fiber::ExecutionContext::Isolated.new("get") do
         ready.wait
         while running
-          Foo.foo.read do |value|
+          Foo.foo.shared do |value|
             case value
             in Foo
               assert_equal Foo::INSTANCE.as(Void*).address, value.as(Void*).address
