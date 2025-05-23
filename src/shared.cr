@@ -29,6 +29,10 @@ module Sync
   #   end
   # end
   # ```
+  #
+  # Consider a `Shared(T)` if your workload mostly consists of immutable reads
+  # of the value, with only seldom writes or inner mutations of the value's
+  # inner state.
   @[Sync::Safe]
   class Shared(T)
     include Lockable
@@ -82,6 +86,11 @@ module Sync
 
     # Locks in shared mode and returns a shallow copy of the value. The lock is
     # released before returning the new value.
+    #
+    # Sometimes it may not be needed to own or borrow the value (no need to
+    # mutate it, or the value is returned by copy anyway), and taking a copy can
+    # help release the lock early, instead of keeping the lock acquired for a
+    # while, preventing progress of fibers trying to lock exclusively.
     def dup_value : T
       lock.read { @value.dup }
     end
@@ -101,9 +110,9 @@ module Sync
     # Prefer `#dup_value` or `#clone_value` to get a shallow or deep copy of the
     # value instead.
     #
-    # WARNING: Breaks the shared/exclusive guarantees, since the returned value
-    # outlives the lock; it can be accessed in parallel to the synchronized
-    # methods.
+    # WARNING: Breaks the shared/exclusive guarantees since the returned value
+    # outlives the lock, the value can be accessed concurrently to the
+    # synchronized methods.
     def value : T
       lock.read { @value }
     end

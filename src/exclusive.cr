@@ -28,6 +28,10 @@ module Sync
   #   end
   # end
   # ```
+  #
+  # Consider an `Exclusive(T)` if your workload mostly needs to own the value,
+  # and most, if not all, critical sections need to mutate the inner state of
+  # the value for example.
   @[Sync::Safe]
   class Exclusive(T)
     include Lockable
@@ -45,7 +49,7 @@ module Sync
     # returning.
     #
     # The value is owned for the duration of the block, and can be safely
-    # mutated for example.
+    # mutated.
     #
     # WARNING: The value musn't be retained and accessed after the block has
     # returned.
@@ -67,6 +71,11 @@ module Sync
 
     # Locks the mutex and returns a shallow copy of the value. The lock is
     # released before returning the new value.
+    #
+    # Sometimes it may not be needed to own the value (no need to mutate it, or
+    # the value is returned by copy anyway), and taking a copy can help release
+    # the lock early, instead of keeping the lock acquired for a while,
+    # preventing progress of other fibers.
     def dup_value : T
       lock.synchronize { @value.dup }
     end
@@ -86,9 +95,9 @@ module Sync
     # Prefer `#dup_value` or `#clone_value` to get a shallow or deep copy of the
     # value instead.
     #
-    # WARNING: Breaks the mutual exclusion guarantee, since the returned value
-    # outlives the lock it can be accessed in parallel to the synchronized
-    # methods.
+    # WARNING: Breaks the mutual exclusion guarantee since the returned value
+    # outlives the lock, the value can be accessed concurrently to the
+    # synchronized methods.
     def value : T
       lock.synchronize { @value }
     end
