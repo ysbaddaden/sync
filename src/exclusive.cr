@@ -14,15 +14,15 @@ module Sync
   #   @@running : Sync::Exclusive.new([] of Queue)
   #
   #   def self.on_started(queue)
-  #     @@running.get(&.push(queue))
+  #     @@running.exclusive(&.push(queue))
   #   end
   #
   #   def self.on_stopped(queue)
-  #     @@running.get(&.delete(queue))
+  #     @@running.exclusive(&.delete(queue))
   #   end
   #
   #   def self.each(&)
-  #     @@running.get do |list|
+  #     @@running.exclusive do |list|
   #       list.each { |queue| yield queue }
   #     end
   #   end

@@ -15,15 +15,15 @@ module Sync
   #   @@running : Sync::Shared.new([] of Queue)
   #
   #   def self.on_started(queue)
-  #     @@running.write(&.push(queue))
+  #     @@running.exclusive(&.push(queue))
   #   end
   #
   #   def self.on_stopped(queue)
-  #     @@running.write(&.delete(queue))
+  #     @@running.exclusive(&.delete(queue))
   #   end
   #
   #   def self.each(&)
-  #     @@running.read do |list|
+  #     @@running.shared do |list|
   #       list.each { |queue| yield queue }
   #     end
   #   end
