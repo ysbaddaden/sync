@@ -59,7 +59,7 @@ module Sync
       lock.read { yield @value }
     end
 
-    @[Deprecated("use #shared instead.")]
+    @[Deprecated("Use #shared instead.")]
     def read(& : T -> U) : U forall U
       shared { |value| yield value }
     end
@@ -76,7 +76,7 @@ module Sync
       lock.write { yield @value }
     end
 
-    @[Deprecated("use #exclusive instead.")]
+    @[Deprecated("Use #exclusive instead.")]
     def write(& : T -> U) : U forall U
       exclusive { |value| yield value }
     end

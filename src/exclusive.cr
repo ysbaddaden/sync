@@ -57,7 +57,7 @@ module Sync
       lock.synchronize { yield @value }
     end
 
-    @[Deprecated("use #exclusive instead.")]
+    @[Deprecated("Use #exclusive instead.")]
     def get(& : T -> U) : U forall U
       exclusive { |value| yield value }
     end
