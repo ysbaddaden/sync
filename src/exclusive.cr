@@ -57,6 +57,11 @@ module Sync
       lock.synchronize { yield @value }
     end
 
+    @[Deprecated("use #exclusive instead.")]
+    def get(& : T -> U) : U forall U
+      exclusive { |value| yield value }
+    end
+
     # Locks the mutex, yields the value and eventually replaces the value with
     # the one returned by the block. The lock is released before returning.
     #
