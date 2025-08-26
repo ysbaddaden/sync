@@ -136,5 +136,10 @@ module Sync
     protected def wait(cv : Pointer(CV)) : Nil
       lock.wait(cv)
     end
+
+    # :nodoc:
+    def dup
+      {% raise "Can't dup {{@type}}" %}
+    end
   end
 end

@@ -135,5 +135,10 @@ module Sync
         raise Error::Failed.new
       end
     end
+
+    # :nodoc:
+    def dup
+      {% raise "Can't dup {{@type}}" %}
+    end
   end
 end

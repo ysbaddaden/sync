@@ -50,5 +50,10 @@ module Sync
     def broadcast : Nil
       @cv.broadcast
     end
+
+    # :nodoc:
+    def dup
+      {% raise "Can't dup {{@type}}" %}
+    end
   end
 end

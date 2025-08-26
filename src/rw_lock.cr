@@ -147,5 +147,10 @@ module Sync
     protected def owns_lock? : Bool
       @locked_by == Fiber.current
     end
+
+    # :nodoc:
+    def dup
+      {% raise "Can't dup {{@type}}" %}
+    end
   end
 end
