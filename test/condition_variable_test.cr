@@ -150,4 +150,42 @@ class Sync::ConditionVariableTest < Minitest::Test
 
     eventually { assert_equal 2, state }
   end
+
+  def test_reentrant_mutex
+    m = Sync::Mutex.new(:reentrant)
+    c = Sync::ConditionVariable.new(m)
+
+    m.lock
+    m.lock
+
+    spawn do
+      m.lock
+      c.signal
+      m.unlock
+    end
+
+    c.wait
+
+    m.unlock
+    m.unlock # musn't raise (can't unlock Sync::Mutex that isn't locked)
+  end
+
+  def test_reentrant_rwlock
+    m = Sync::RWLock.new(:reentrant)
+    c = Sync::ConditionVariable.new(m)
+
+    m.lock_write
+    m.lock_write
+
+    spawn do
+      m.lock_write
+      c.signal
+      m.unlock_write
+    end
+
+    c.wait
+
+    m.unlock_write
+    m.unlock_write # musn't raise (can't unlock Sync::RWLock that isn't locked)
+  end
 end

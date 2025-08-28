@@ -126,11 +126,13 @@ module Sync
     end
 
     protected def wait(cv : Pointer(CV)) : Nil
+      counter = 1
+
       unless @type.unchecked?
         if @mu.held?
           raise Error.new("Can't unlock Sync::RWLock locked by another fiber") unless owns_lock?
           @locked_by = nil
-          @counter -= 1 if @type.reentrant?
+          counter, @counter = @counter, 0 if @type.reentrant?
         elsif !@mu.rheld?
           raise Error.new("Can't unlock Sync::RWLock that isn't locked")
         end
@@ -140,7 +142,7 @@ module Sync
 
       unless @type.unchecked? || @mu.rheld?
         @locked_by = Fiber.current
-        @counter += 1 if @type.reentrant?
+        @counter = counter if @type.reentrant?
       end
     end
 
