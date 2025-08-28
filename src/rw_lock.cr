@@ -130,7 +130,7 @@ module Sync
         if @mu.held?
           raise Error.new("Can't unlock Sync::RWLock locked by another fiber") unless owns_lock?
           @locked_by = nil
-          counter_snapshot = @counter if @type.reentrant?
+          counter_snapshot = (@counter -= 1) if @type.reentrant?
         elsif !@mu.rheld?
           raise Error.new("Can't unlock Sync::RWLock that isn't locked")
         end
@@ -140,7 +140,7 @@ module Sync
 
       unless @type.unchecked? || @mu.rheld?
         @locked_by = Fiber.current
-        @counter = counter_snapshot.not_nil! if @type.reentrant?
+        @counter = 1 + counter_snapshot.not_nil! if @type.reentrant?
       end
     end
 
