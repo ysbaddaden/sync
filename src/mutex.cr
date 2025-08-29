@@ -73,7 +73,7 @@ module Sync
       @mu.unlock
     end
 
-    protected def wait(cv : Pointer(CV)) : Nil
+    protected def wait(cv : Pointer(CV), deadline : Time::Span?) : TimeoutResult
       counter = 1
 
       unless @type.unchecked?
@@ -86,12 +86,14 @@ module Sync
         end
       end
 
-      cv.value.wait pointerof(@mu)
+      result = cv.value.wait(pointerof(@mu), deadline)
 
       unless @type.unchecked?
         @locked_by = Fiber.current
         @counter = counter if @type.reentrant?
       end
+
+      result
     end
 
     protected def owns_lock? : Bool

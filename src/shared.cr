@@ -145,8 +145,8 @@ module Sync
     def unsafe_set(@value : T) : T
     end
 
-    protected def wait(cv : Pointer(CV)) : Nil
-      lock.wait(cv)
+    protected def wait(cv : Pointer(CV), deadline : Time::Span?) : TimeoutResult
+      lock.wait(cv, deadline)
     end
 
     # :nodoc:

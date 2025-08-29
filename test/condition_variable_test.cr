@@ -3,6 +3,36 @@ require "../src/mutex"
 require "../src/condition_variable"
 
 class Sync::ConditionVariableTest < Minitest::Test
+  def test_wait_eventually_expires
+    m = Sync::Mutex.new
+    c = Sync::ConditionVariable.new(m)
+
+    m.synchronize do
+      elapsed = Time.measure do
+        assert c.wait(10.milliseconds).expired?
+        assert c.wait(until: Time.monotonic + 5.milliseconds).expired?
+      end
+      assert elapsed > 15.milliseconds
+      assert_in_delta 0.015, elapsed.to_f, delta: 0.002
+    end
+  end
+
+  def test_wait_resumes_before_deadline
+    m = Sync::Mutex.new
+    c = Sync::ConditionVariable.new(m)
+
+    m.synchronize do
+      spawn do
+        m.synchronize { c.signal }
+      end
+
+      elapsed = Time.measure do
+        assert c.wait(10.milliseconds).ok?
+      end
+      assert elapsed < 10.milliseconds
+    end
+  end
+
   def test_signal_mutex
     m = Sync::Mutex.new
     c = Sync::ConditionVariable.new(m)

@@ -251,12 +251,14 @@ module Sync
             writer_waiting = 0_u32
 
             if first_waiter = @waiters.shift?
+              first_waiter.value.increment_remove_count
               wake.push(first_waiter)
 
               if first_waiter.value.reader?
                 @waiters.each do |waiter|
                   if waiter.value.reader?
                     @waiters.delete(waiter)
+                    waiter.value.increment_remove_count
                     wake.push(waiter)
                   else
                     # found a writer, prevent new readers from locking
@@ -356,6 +358,7 @@ module Sync
       # no need to set waiting (it's already true), but we must tell CV#wait
       # that the waiter has been transferred (it's no longer a CV waiter)
       waiter.value.cv_mu = Pointer(MU).null
+      waiter.value.cancellation_token = nil
 
       @waiters.push(waiter)
     end

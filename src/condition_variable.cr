@@ -30,7 +30,15 @@ module Sync
     def wait : Nil
       # delegate to lockable so it can run pre-unlock checks and cleanup, then
       # reset after-lock values (locked by, reentrant counter)
-      @lock.wait pointerof(@cv)
+      @lock.wait(pointerof(@cv), nil)
+    end
+
+    def wait(duration : Time::Span) : TimeoutResult
+      wait until: Time.monotonic + duration
+    end
+
+    def wait(*, until deadline : Time::Span) : TimeoutResult
+      @lock.wait(pointerof(@cv), deadline)
     end
 
     # Wakes up one waiting fiber.

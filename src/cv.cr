@@ -36,9 +36,18 @@ module Sync
       @waiters = Dll(Waiter).new
     end
 
-    # TODO: wait until deadline
-    def wait(mu : Pointer(MU)) : Nil
+    def wait(mu : Pointer(MU), deadline : Time::Span? = nil) : TimeoutResult
       waiter = Waiter.init(waiter_type(mu), mu)
+      remove_count = waiter.value.remove_count # NOTE: always zero
+
+      result = waiter.value.wait(deadline) { enqueue(mu, waiter) }
+      outcome = resolve(waiter, remove_count, result)
+
+      relock(mu, waiter)
+      outcome
+    end
+
+    private def enqueue(mu, waiter)
       waiter.value.waiting!
 
       old_word = acquire_spinlock(set: NON_EMPTY)
@@ -51,11 +60,39 @@ module Sync
       else
         mu.value.runlock
       end
+    end
 
-      # wait...
-      waiter.value.wait
-      # ...resumed
+    private def resolve(waiter, remove_count, result)
+      outcome = TimeoutResult::OK
 
+      if result.expired? && waiter.value.waiting?
+        must_suspend = false
+
+        # timeout expired and no wakeup, confirm after acquiring spinlock
+        old_word = acquire_spinlock
+        if waiter.value.remove_count == remove_count # NOTE: waiter.value.zero? might be enough
+          if waiter.value.waiting?
+            # the waiter is still governed by this CV (not moved to a MU) and
+            # still no wakeup
+            outcome = TimeoutResult::EXPIRED
+            @waiters.delete(waiter)
+            waiter.value.increment_remove_count
+            old_word &= ~NON_EMPTY if @waiters.empty?
+          end
+        else
+          # the waiter has been moved to a MU that will always enqueue the fiber
+          # (the transfer erased the cancellation token)
+          must_suspend = true
+        end
+        release_spinlock(old_word)
+
+        Fiber.suspend if must_suspend
+      end
+
+      outcome
+    end
+
+    private def relock(mu, waiter)
       if waiter.value.cv_mu
         # waiter was woken from cv, and must re-acquire mu
         if waiter.value.writer?
@@ -81,6 +118,7 @@ module Sync
       old_word = acquire_spinlock
 
       if first_waiter = @waiters.shift?
+        first_waiter.value.increment_remove_count
         wake.push(first_waiter)
 
         if first_waiter.value.reader?
@@ -98,6 +136,7 @@ module Sync
             end
 
             @waiters.delete(waiter)
+            waiter.value.increment_remove_count
             wake.push(waiter)
           end
         end
@@ -124,6 +163,7 @@ module Sync
       # wake all waiters
       while waiter = @waiters.shift?
         all_readers = false if waiter.value.writer?
+        waiter.value.increment_remove_count
         wake.push(waiter)
       end
 
@@ -177,7 +217,7 @@ module Sync
     end
 
     private def release_spinlock(word)
-      @word.set(word & ~SPINLOCK)
+      @word.set(word & ~SPINLOCK, :release)
     end
   end
 end

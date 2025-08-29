@@ -18,6 +18,16 @@ module Sync
       Reentrant
     end
 
-    protected abstract def wait(cv : Pointer(CV)) : Nil
+    protected abstract def wait(cv : Pointer(CV), deadline : Time::Span?) : TimeoutResult
+  end
+
+  enum TimeoutResult
+    EXPIRED
+    OK
+
+    @[AlwaysInline]
+    def self.from(value : Fiber::TimeoutResult) : self
+      value.expired? ? EXPIRED : OK
+    end
   end
 end
