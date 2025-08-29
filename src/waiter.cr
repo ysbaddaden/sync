@@ -59,24 +59,25 @@ module Sync
       end
     end
 
-    def wait(deadline : Nil, &) : Fiber::TimeoutResult
+    def wait(deadline : Nil, &) : TimeoutResult
       yield
       wait # TODO: Fiber.suspend is probably enough
-      Fiber::TimeoutResult::CANCELED
+      TimeoutResult::OK
     end
 
-    def wait(deadline : Time::Span, &) : Fiber::TimeoutResult
-      Fiber.sleep(until: deadline) do |cancellation_token|
+    def wait(deadline : Time::Span, &) : TimeoutResult
+      result = Fiber.sleep(until: deadline) do |cancellation_token|
         @cancellation_token = cancellation_token
         yield
       end
+      TimeoutResult.from(result)
     end
 
     def wake : Nil
       @waiting.set(false, :relaxed)
 
       if token = @cancellation_token
-        return unless Fiber.cancel_suspension?(token)
+        return unless @fiber.cancel_suspension?(token)
       end
 
       @fiber.enqueue

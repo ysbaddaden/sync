@@ -36,14 +36,14 @@ module Sync
       @waiters = Dll(Waiter).new
     end
 
-    def wait(mu : Pointer(MU), deadline : Time::Span? = nil) : Fiber::TimeoutResult
+    def wait(mu : Pointer(MU), deadline : Time::Span? = nil) : TimeoutResult
       waiter = Waiter.init(waiter_type(mu), mu)
       remove_count = waiter.value.remove_count # NOTE: always zero
 
       result = waiter.value.wait(deadline) { enqueue(mu, waiter) }
       outcome = resolve(waiter, remove_count, result)
 
-      relock(mu, waiter) unless outcome.expired?
+      relock(mu, waiter)
       outcome
     end
 
@@ -63,7 +63,7 @@ module Sync
     end
 
     private def resolve(waiter, remove_count, result)
-      outcome = Fiber::TimeoutResult::CANCELED
+      outcome = TimeoutResult::OK
 
       if result.expired? && waiter.value.waiting?
         must_suspend = false
@@ -74,7 +74,7 @@ module Sync
           if waiter.value.waiting?
             # the waiter is still governed by this CV (not moved to a MU) and
             # still no wakeup
-            outcome = Fiber::TimeoutResult::EXPIRED
+            outcome = TimeoutResult::EXPIRED
             @waiters.delete(waiter)
             waiter.value.increment_remove_count
             old_word &= ~NON_EMPTY if @waiters.empty?
