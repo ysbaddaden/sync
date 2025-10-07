@@ -20,8 +20,8 @@ module Sync
   struct Dll(T)
     module Node
       macro included
-        property next : ::Pointer(self) = Pointer(self).null
-        property prev : ::Pointer(self) = Pointer(self).null
+        property next : ::Pointer(self) = ::Pointer(self).null
+        property prev : ::Pointer(self) = ::Pointer(self).null
 
         macro init(*args)
           \%node = ::{{@type}}.new(\{{args.splat}})
