@@ -3,6 +3,19 @@ require "../src/mutex"
 require "../src/condition_variable"
 
 class Sync::ConditionVariableTest < Minitest::Test
+  def test_signal
+    m = Sync::Mutex.new
+    c = Sync::ConditionVariable.new(m)
+
+    m.synchronize do
+      spawn do
+        m.synchronize { c.signal }
+      end
+
+      c.wait
+    end
+  end
+
   def test_signal_mutex
     m = Sync::Mutex.new
     c = Sync::ConditionVariable.new(m)

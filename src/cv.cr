@@ -56,12 +56,12 @@ module Sync
       waiter.value.wait
       # ...resumed
 
-      if waiter.value.cv_mu
+      if cv_mu = waiter.value.cv_mu
         # waiter was woken from cv, and must re-acquire mu
         if waiter.value.writer?
-          mu.value.lock
+          cv_mu.value.lock
         else
-          mu.value.rlock
+          cv_mu.value.rlock
         end
       else
         # waiter was moved to mu's queue, then awoken from mu and is thus a

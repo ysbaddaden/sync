@@ -305,18 +305,29 @@ module Sync
     end
 
     protected def try_transfer(wake : Pointer(Dll(Waiter)), first_waiter : Pointer(Waiter), all_readers : Bool) : Nil
-      old_word = @word.get(:relaxed)
-
       first_is_writer = first_waiter.value.writer?
-      zero_to_acquire = ANY_LOCK | LONG_WAIT
-      zero_to_acquire |= WRITER_WAITING unless first_is_writer
+      next_waiter = wake.value.next?(first_waiter)
+      zero_to_acquire = first_is_writer ? ANY_LOCK : WLOCK | WRITER_WAITING
+
+      # there's no pointerof(self), so we make do:
+      mu = first_waiter.value.cv_mu
+
+      old_word = @word.get(:relaxed)
       first_cant_acquire = (old_word & zero_to_acquire) != 0
 
-      next_waiter = @waiters.next?(first_waiter)
-
+      # We will transfer elements of *wake* to @waiters if all of:
+      # - some thread holds the lock, and
+      # - the spinlock is not held, and
+      # - mu cannot be acquired in the mode of the first waiter, or there's more
+      #   than one thread on wake and not all are readers, and
+      # - we acquire the spinlock on the first try.
+      #
+      # The requirement that some thread holds the lock ensures that at least
+      # one of the transferred waiters will be woken.
       if ((old_word & ANY_LOCK) != 0 &&
          (old_word & SPINLOCK) == 0 &&
-         (first_cant_acquire || (next_waiter && !all_readers)))
+         (first_cant_acquire || (!next_waiter.null? && !all_readers)))
+        # acquire the spinlock + mark mu as having waiters
         _, success = @word.compare_and_set(old_word, old_word | SPINLOCK | WAITING, :acquire, :relaxed)
         return unless success
 
@@ -329,35 +340,44 @@ module Sync
           transferred_a_writer = first_is_writer
         else
           woke_a_reader = !first_is_writer
+        end
 
-          @waiters.each do |waiter|
-            is_writer = waiter.value.writer?
+        wake.value.each do |waiter|
+          is_writer = waiter.value.writer?
 
-            if first_cant_acquire || first_is_writer || is_writer
-              transfer(waiter, from: wake)
-              transferred_a_writer ||= is_writer
-            else
-              woke_a_reader ||= !is_writer
-            end
+          # we transfer this waiter if any of:
+          # - the first waiter can't acquire mu,
+          # - the first waiter is a writer, or
+          # - this element is a writer
+          if waiter.value.cv_mu != mu
+            # edge case: waiter doesn't wait for this mu, wake it
+          elsif first_cant_acquire || first_is_writer || is_writer
+            transfer(waiter, from: wake)
+            transferred_a_writer ||= is_writer
+          else
+            woke_a_reader ||= !is_writer
           end
         end
 
+        # claim a waiting writer if we transferred one, except if we woke
+        # readers, in which case we want those readers to be able to acquire
+        # immediately
         if transferred_a_writer && !woke_a_reader
           set_on_release |= WRITER_WAITING
         end
 
+        # release spinlock (WAITING has already been set on acquire)
         release_spinlock(set_on_release)
       end
     end
 
     private def transfer(waiter, from)
       from.value.delete(waiter)
-
-      # no need to set waiting (it's already true), but we must tell CV#wait
-      # that the waiter has been transferred (it's no longer a CV waiter)
-      waiter.value.cv_mu = Pointer(MU).null
-
       @waiters.push(waiter)
+
+      # no need to set waiting (it's already true) but we must tell CV#wait
+      # that the waiter has been transferred and is no longer a CV waiter
+      waiter.value.cv_mu = Pointer(MU).null
     end
   end
 end
