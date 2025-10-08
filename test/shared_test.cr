@@ -2,24 +2,24 @@ require "./test_helper"
 require "../src/shared"
 
 describe Sync::Shared do
-  it "#read(&)" do
+  it "#borrow(&)" do
     ary = [1, 2, 3, 4, 5]
     var = Sync::Shared.new(ary)
-    var.read { |val| assert_same ary, val }
+    var.borrow { |val| assert_same ary, val }
   end
 
-  it "#write(&)" do
+  it "#own(&)" do
     ary1 = [1, 2, 3, 4, 5]
     var = Sync::Shared.new(ary1)
-    var.write { |val| val << 6 }
-    assert_same ary1, var.value
+    var.own { |val| val << 6 }
+    assert_same ary1, var.get
     assert_equal [1, 2, 3, 4, 5, 6], ary1
   end
 
   it "#get" do
     ary = [1, 2, 3, 4, 5]
     var = Sync::Shared.new(ary)
-    assert_same ary, var.value
+    assert_same ary, var.get
   end
 
   it "#set" do
@@ -28,7 +28,7 @@ describe Sync::Shared do
 
     var = Sync::Shared.new(ary1)
     var.set(ary2)
-    assert_same ary2, var.value
+    assert_same ary2, var.get
   end
 
   it "#replace" do
@@ -40,7 +40,7 @@ describe Sync::Shared do
       assert_same ary1, value
       ary2
     end
-    assert_same ary2, var.value
+    assert_same ary2, var.get
   end
 
   it "#dup_value" do
@@ -88,9 +88,9 @@ describe Sync::Shared do
     counter = Atomic(Int64).new(0)
 
     10.times do
-      spawn(name: "get") do
+      spawn(name: "shared-read") do
         100.times do
-          var.read do |value|
+          var.borrow do |value|
             value.each { counter.add(1, :relaxed) }
           end
           Fiber.yield
@@ -99,9 +99,9 @@ describe Sync::Shared do
     end
 
     5.times do
-      wg.spawn(name: "get-mutates") do
+      wg.spawn(name: "exclusive-write") do
         100.times do
-          var.write do |value|
+          var.own do |value|
             100.times { value << value.size }
           end
           Fiber.yield
@@ -169,7 +169,7 @@ describe Sync::Shared do
       contexts << Fiber::ExecutionContext::Isolated.new("get") do
         ready.wait
         while running
-          Foo.foo.read do |value|
+          Foo.foo.borrow do |value|
             case value
             in Foo
               assert_equal Foo::INSTANCE.as(Void*).address, value.as(Void*).address
