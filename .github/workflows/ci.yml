@@ -33,6 +33,7 @@ jobs:
           - macos-latest
           - macos-15-intel
           - windows-latest
+        fail-fast: false
     runs-on: ${{matrix.os}}
     steps:
       - run: git config --global core.autocrlf false
@@ -50,9 +51,10 @@ jobs:
           sudo apt-get --quiet update
           sudo apt-get --quiet --yes install crystal
 
-      # add timeout utility on macos
       - if: startsWith(matrix.os, 'macos-')
         run: brew install coreutils
+      - if: startsWith(matrix.os, 'windows-')
+        run: choco install --no-progress gnuwin32-coreutils.portable
 
       - run: shards install
       - run: timeout 5m make test
