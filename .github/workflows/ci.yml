@@ -51,14 +51,12 @@ jobs:
           sudo apt-get --quiet update
           sudo apt-get --quiet --yes install crystal
 
-      - if: startsWith(matrix.os, 'macos-')
-        run: brew install coreutils
-      - if: startsWith(matrix.os, 'windows-')
-        run: choco install --no-progress gnuwin32-coreutils.portable
-
       - run: shards install
-      - run: timeout 5m make test
+      - run: make test
+        timeout-minutes: 5
       - if: success() || failure()
-        run: timeout 5m make test CRFLAGS="-Dpreview_mt"
+        run: make test CRFLAGS="-Dpreview_mt"
+        timeout-minutes: 5
       - if: success() || failure()
-        run: timeout 5m make test CRFLAGS="-Dpreview_mt -Dexecution_context"
+        run: make test CRFLAGS="-Dpreview_mt -Dexecution_context"
+        timeout-minutes: 5
