@@ -38,13 +38,11 @@ jobs:
     steps:
       - run: git config --global core.autocrlf false
       - uses: actions/checkout@v5
-      - uses: crystal-lang/install-crystal@e840c5efea32990f1d1eed315dc6498e2e3c5c44 # v1 + linux arm64
+      - uses: crystal-lang/install-crystal@c1e3f626f8a653710ee386e9195230ea8ae1cda9 # v1
       - run: shards install
       - run: make test
         timeout-minutes: 5
-      - if: success() || failure()
-        run: make test CRFLAGS="-Dpreview_mt"
+      - run: make test CRFLAGS="-Dpreview_mt"
         timeout-minutes: 5
-      - if: success() || failure()
-        run: make test CRFLAGS="-Dpreview_mt -Dexecution_context"
+      - run: make test CRFLAGS="-Dpreview_mt -Dexecution_context"
         timeout-minutes: 5
