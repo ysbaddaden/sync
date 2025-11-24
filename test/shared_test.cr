@@ -8,10 +8,10 @@ describe Sync::Shared do
     var.shared { |val| assert_same ary, val }
   end
 
-  it "#exclusive(&)" do
+  it "#lock(&)" do
     ary1 = [1, 2, 3, 4, 5]
     var = Sync::Shared.new(ary1)
-    var.exclusive { |val| val << 6 }
+    var.lock { |val| val << 6 }
     assert_same ary1, var.get
     assert_equal [1, 2, 3, 4, 5, 6], ary1
   end
@@ -101,7 +101,7 @@ describe Sync::Shared do
     5.times do
       wg.spawn(name: "exclusive-write") do
         100.times do
-          var.exclusive do |value|
+          var.lock do |value|
             100.times { value << value.size }
           end
           Fiber.yield

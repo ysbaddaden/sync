@@ -2,10 +2,10 @@ require "./test_helper"
 require "../src/exclusive"
 
 describe Sync::Exclusive do
-  it "#exclusive(&)" do
+  it "#lock(&)" do
     ary = [1, 2, 3, 4, 5]
     var = Sync::Exclusive.new(ary)
-    var.exclusive { |val| assert_same ary, val }
+    var.lock { |val| assert_same ary, val }
   end
 
   it "#get" do
@@ -82,7 +82,7 @@ describe Sync::Exclusive do
     10.times do
       spawn(name: "exclusive-read") do
         100.times do
-          var.exclusive do |value|
+          var.lock do |value|
             value.each { counter.add(1, :relaxed) }
           end
           Fiber.yield
@@ -93,7 +93,7 @@ describe Sync::Exclusive do
     5.times do
       wg.spawn(name: "exclusive-write") do
         100.times do
-          var.exclusive do |value|
+          var.lock do |value|
             100.times { value << value.size }
           end
           Fiber.yield
@@ -161,7 +161,7 @@ describe Sync::Exclusive do
       contexts << Fiber::ExecutionContext::Isolated.new("get") do
         ready.wait
         while running
-          Foo.foo.exclusive do |value|
+          Foo.foo.lock do |value|
             case value
             in Foo
               assert_equal Foo::INSTANCE.as(Void*).address, value.as(Void*).address

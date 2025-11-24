@@ -15,11 +15,11 @@ module Sync
   #   @@running : Sync::Shared.new([] of Queue)
   #
   #   def self.on_started(queue)
-  #     @@running.exclusive(&.push(queue))
+  #     @@running.lock(&.push(queue))
   #   end
   #
   #   def self.on_stopped(queue)
-  #     @@running.exclusive(&.delete(queue))
+  #     @@running.lock(&.delete(queue))
   #   end
   #
   #   def self.each(&)
@@ -72,13 +72,13 @@ module Sync
     #
     # WARNING: The value musn't be retained and accessed after the block has
     # returned.
-    def exclusive(& : T -> U) : U forall U
+    def lock(& : T -> U) : U forall U
       lock.write { yield @value }
     end
 
-    @[Deprecated("Use #exclusive instead.")]
+    @[Deprecated("Use #lock instead.")]
     def write(& : T -> U) : U forall U
-      exclusive { |value| yield value }
+      lock { |value| yield value }
     end
 
     # Locks in exclusive mode, yields the current value and eventually replaces
