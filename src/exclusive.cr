@@ -14,15 +14,15 @@ module Sync
   #   @@running : Sync::Exclusive.new([] of Queue)
   #
   #   def self.on_started(queue)
-  #     @@running.get(&.push(queue))
+  #     @@running.lock(&.push(queue))
   #   end
   #
   #   def self.on_stopped(queue)
-  #     @@running.get(&.delete(queue))
+  #     @@running.lock(&.delete(queue))
   #   end
   #
   #   def self.each(&)
-  #     @@running.get do |list|
+  #     @@running.lock do |list|
   #       list.each { |queue| yield queue }
   #     end
   #   end
@@ -53,8 +53,13 @@ module Sync
     #
     # WARNING: The value musn't be retained and accessed after the block has
     # returned.
-    def get(& : T -> U) : U forall U
+    def lock(& : T -> U) : U forall U
       lock.synchronize { yield @value }
+    end
+
+    @[Deprecated("Use #lock instead.")]
+    def get(& : T -> U) : U forall U
+      lock { |value| yield value }
     end
 
     # Locks the mutex, yields the value and eventually replaces the value with
@@ -77,7 +82,7 @@ module Sync
     # the lock early, instead of keeping the lock acquired for a while,
     # preventing progress of other fibers.
     #
-    # @[Experimental("The method may not have much value over #get(&.dup)")]
+    # @[Experimental("The method may not have much value over #lock(&.dup)")]
     def dup_value : T
       lock.synchronize { @value.dup }
     end
@@ -85,7 +90,7 @@ module Sync
     # Locks the mutex and returns a deep copy of the value. The lock is
     # released before returning the new value.
     #
-    # @[Experimental("The method may not have much value over #get(&.clone)")]
+    # @[Experimental("The method may not have much value over #lock(&.clone)")]
     def clone_value : T
       lock.synchronize { @value.clone }
     end
@@ -103,9 +108,14 @@ module Sync
     # outlives the lock, the value can be accessed concurrently to the
     # synchronized methods.
     #
-    # @[Experimental("The method may not have much value over #get(&.itself)")]
-    def value : T
+    # @[Experimental("The method may not have much value over #lock(&.itself)")]
+    def get : T
       lock.synchronize { @value }
+    end
+
+    @[Deprecated("Use #get instead.")]
+    def value : T
+      get
     end
 
     # Locks the mutex and sets the value. Unlocks the mutex before returning.

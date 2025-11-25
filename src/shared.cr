@@ -15,15 +15,15 @@ module Sync
   #   @@running : Sync::Shared.new([] of Queue)
   #
   #   def self.on_started(queue)
-  #     @@running.write(&.push(queue))
+  #     @@running.lock(&.push(queue))
   #   end
   #
   #   def self.on_stopped(queue)
-  #     @@running.write(&.delete(queue))
+  #     @@running.lock(&.delete(queue))
   #   end
   #
   #   def self.each(&)
-  #     @@running.read do |list|
+  #     @@running.shared do |list|
   #       list.each { |queue| yield queue }
   #     end
   #   end
@@ -55,8 +55,13 @@ module Sync
     #
     # WARNING: The value musn't be retained and accessed after the block has
     # returned.
-    def read(& : T -> U) : U forall U
+    def shared(& : T -> U) : U forall U
       lock.read { yield @value }
+    end
+
+    @[Deprecated("Use #shared instead.")]
+    def read(& : T -> U) : U forall U
+      shared { |value| yield value }
     end
 
     # Locks in exclusive mode and yields the value. The lock is released before
@@ -67,8 +72,13 @@ module Sync
     #
     # WARNING: The value musn't be retained and accessed after the block has
     # returned.
-    def write(& : T -> U) : U forall U
+    def lock(& : T -> U) : U forall U
       lock.write { yield @value }
+    end
+
+    @[Deprecated("Use #lock instead.")]
+    def write(& : T -> U) : U forall U
+      lock { |value| yield value }
     end
 
     # Locks in exclusive mode, yields the current value and eventually replaces
@@ -92,7 +102,7 @@ module Sync
     # help release the lock early, instead of keeping the lock acquired for a
     # while, preventing progress of fibers trying to lock exclusively.
     #
-    # @[Experimental("The method may not have much value over #read(&.dup)")]
+    # @[Experimental("The method may not have much value over #shared(&.dup)")]
     def dup_value : T
       lock.read { @value.dup }
     end
@@ -100,7 +110,7 @@ module Sync
     # Locks in shared mode and returns a deep copy of the value. The lock is
     # released before returning the new value.
     #
-    # @[Experimental("The method may not have much value over #read(&.clone)")]
+    # @[Experimental("The method may not have much value over #shared(&.clone)")]
     def clone_value : T
       lock.read { @value.clone }
     end
@@ -118,9 +128,14 @@ module Sync
     # outlives the lock, the value can be accessed concurrently to the
     # synchronized methods.
     #
-    # @[Experimental("The method may not have much value over #read(&.itself)")]
-    def value : T
+    # @[Experimental("The method may not have much value over #shared(&.itself)")]
+    def get : T
       lock.read { @value }
+    end
+
+    @[Deprecated("Use #get instead.")]
+    def value : T
+      get
     end
 
     # Locks in exclusive mode and sets the value.
