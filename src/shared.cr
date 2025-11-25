@@ -133,6 +133,11 @@ module Sync
       lock.read { @value }
     end
 
+    @[Deprecated("Use #get instead.")]
+    def value : T
+      get
+    end
+
     # Locks in exclusive mode and sets the value.
     def set(value : T) : Nil
       lock.write { @value = value }

@@ -113,6 +113,11 @@ module Sync
       lock.synchronize { @value }
     end
 
+    @[Deprecated("Use #get instead.")]
+    def value : T
+      get
+    end
+
     # Locks the mutex and sets the value. Unlocks the mutex before returning.
     #
     # Always acquires and releases the lock, so writing the value is always
