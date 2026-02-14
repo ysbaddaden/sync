@@ -33,6 +33,7 @@ Run `make docs` or head to
 - `Sync::RWLock` to protect critical sections using shared access and mutual
   exclusion.
 - `Sync::ConditionVariable` to synchronize critical sections together.
+- `Sync::Semaphore` for limiting the concurrency of a critical section.
 
 - `Sync::Exclusive(T)` to protect a value `T` using mutual exclusion.
 - `Sync::Shared(T)` to protect a value `T` using a mix of shared access and
@@ -40,10 +41,6 @@ Run `make docs` or head to
 - `Sync::Future(T)` to delegate the computation of a value `T` to another fiber.
 
 - `Sync::Map(K, V)` for a distributed hash-like data structure.
-
-### TODO
-
-- [ ] `Sync::Semaphore` (?)
 
 ### Performance
 
