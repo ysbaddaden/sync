@@ -1,5 +1,5 @@
 require "./h"
-require "./mu"
+require "sync/mu"
 require "./safe"
 
 module Sync

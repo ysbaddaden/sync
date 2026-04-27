@@ -1,8 +1,13 @@
-require "./mu"
-require "./errors"
-require "./waiter"
+require "sync/mu"
+require "sync/waiter"
+require "./safe"
 
 module Sync
+  class Error < Exception
+    class Failed < Error
+    end
+  end
+
   # An object that will eventually hold a value.
   #
   # You can for example delegate the computation of a value to another fiber,
@@ -48,7 +53,7 @@ module Sync
       @value = uninitialized T
       @mu = MU.new
       @state = State::UNSET
-      @waiters = Dll(Waiter).new
+      @waiters = Crystal::PointerLinkedList(Waiter).new
     end
 
     # Sets the value, then wakes up pending fibers.
@@ -112,12 +117,12 @@ module Sync
         when State::FAILED
           raise_exception!
         when State::UNSET
-          waiter = Waiter.init(:reader)
+          waiter = Waiter.new(:reader)
           @mu.lock
           if @state.unset?
-            @waiters.push(waiter)
+            @waiters.push(pointerof(waiter))
             @mu.unlock
-            waiter.value.wait
+            waiter.wait
           else
             @mu.unlock
           end
